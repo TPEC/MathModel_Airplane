@@ -1,5 +1,8 @@
 package core;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Plane {
     private int id;
     private long timeArrive;
@@ -9,10 +12,13 @@ public class Plane {
     private long timeActive;
     private boolean nw;
 
+    private final Set<User> userUp = new HashSet<>();
+    private final Set<User> userDn = new HashSet<>();
+
     public Plane(int id, long timeArrive, long timeLeave, int typeArrive, int typeLeave, boolean nw) {
         this.id = id;
         this.timeArrive = timeArrive;
-        this.timeArrive = timeLeave - 45L * 60L * 1000L;
+//        this.timeArrive = timeLeave - 45L * 60L * 1000L;
         this.timeLeave = timeLeave;
         this.typeArrive = typeArrive;
         this.typeLeave = typeLeave;
@@ -77,5 +83,17 @@ public class Plane {
 
     public void setTimeActive(long timeActive) {
         this.timeActive = timeActive;
+    }
+
+    public void init() {
+        this.timeActive = -1;
+    }
+
+    public Set<User> getUserUp() {
+        return userUp;
+    }
+
+    public Set<User> getUserDn() {
+        return userDn;
     }
 }

@@ -1,5 +1,11 @@
 package core;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import static solution.Model.MINUTE45;
+
 public class Gate {
     public static final int TYPE_I = 1;
     public static final int TYPE_D = 2;
@@ -16,9 +22,8 @@ public class Gate {
     private int id;
     private int area;
 
-    private Plane plane = null;
+    private final List<Plane> planes = new ArrayList<>();
     private double score = 0;
-    private int planeCount = 0;
     private long timeCount = 0;
 
     public Gate(int typeArrive, int typeLeave, boolean nw, boolean ts, int id, String area) {
@@ -99,41 +104,46 @@ public class Gate {
         this.score = score;
     }
 
-    public Plane getPlane(long time) {
-        if (plane == null) {
-            return null;
-        }
-        if (plane.getTimeLeave() <= time) {
-            this.plane = null;
-        }
-        return plane;
+    public Plane getLastPlane() {
+        return planes.isEmpty() ? null : planes.get(planes.size() - 1);
     }
 
-    public Plane getPlane() {
-        return plane;
+    public Plane getPlaneIn(Plane plane) {
+        return getPlaneIn(plane.getTimeLeave() - MINUTE45, plane.getTimeLeave());
+    }
+
+    public Plane getPlaneIn(long from, long to) {
+        for (Plane p : planes) {
+            if (p.getTimeArrive() < to) {
+                if (p.getTimeLeave() > from) {
+                    return p;
+                }
+            } else {
+                break;
+            }
+        }
+        return null;
     }
 
     public void setPlane(Plane plane) {
-        this.plane = plane;
-        planeCount++;
+        planes.add(plane);
+        planes.sort(Comparator.comparingLong(Plane::getTimeLeave));
         long beg = Math.max(plane.getTimeArrive(), 1516377600000L);
         long end = Math.min(plane.getTimeLeave(), 1516464000000L);
-        timeCount += (end - beg);
+        timeCount += end - beg;
     }
 
     public int getPlaneCount() {
-        return planeCount;
-    }
-
-    public void setPlaneCount(int planeCount) {
-        this.planeCount = planeCount;
+        return planes.size();
     }
 
     public long getTimeCount() {
         return timeCount;
     }
 
-    public void setTimeCount(long timeCount) {
-        this.timeCount = timeCount;
+    public void init() {
+        this.planes.clear();
+        this.score = 0;
+        this.timeCount = 0;
     }
 }
