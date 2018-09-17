@@ -1,7 +1,9 @@
 package solution;
 
+import core.DoubleLong;
 import core.Gate;
 import core.Plane;
+import core.User;
 
 import java.util.*;
 
@@ -9,8 +11,13 @@ public class GreedyModel extends Model {
     private final Set<Gate>[] gateList = new Set[18];
     private final List<Plane>[] planeList = new List[18];
 
+    private int[] sgi = new int[gateSize];
+
     @Override
     public void run() {
+        for (int i = 0; i < sgi.length; i++) {
+            sgi[i] = i;
+        }
         for (int i = 0; i < gateList.length; i++) {
             gateList[i] = new HashSet<>();
             planeList[i] = new ArrayList<>();
@@ -26,29 +33,15 @@ public class GreedyModel extends Model {
             }
             PLANE_A.add(p);
         }
-        List<Plane> PLANE_P = new ArrayList<>();
-        for (int epoch = 0; epoch < 1; epoch++) {
-            System.out.println("---------------EPOCH" + epoch);
-            init();
-            List<Plane> PLANE_T = new ArrayList<>(PLANE_A);
-            PLANE_T.removeAll(PLANE_P);
-
-            System.out.println("-------------P" + PLANE_P.size());
-            doOnce(PLANE_P);
-            System.out.println("SIZE:" + waiting.size());
-            System.out.println("-------------T" + PLANE_T.size());
-            doOnce(PLANE_T);
+        System.out.println("-------------T" + PLANE_A.size());
+        doOnce(PLANE_A);
 
 
-            System.out.println("SIZE:" + waiting.size());
-            for (Plane p : waiting) {
-                System.out.println(p.getId() + "\t" + p.isNw() + "\t" + p.getTypeArrive() + "\t" + p.getTypeLeave());
-            }
-
-            PLANE_P.clear();
-            PLANE_P.addAll(waiting);
-            PLANE_P = new ArrayList<>(new HashSet<>(PLANE_P));
+        System.out.println("SIZE:" + waiting.size());
+        for (Plane p : waiting) {
+            System.out.println(p.getId() + "\t" + p.isNw() + "\t" + p.getTypeArrive() + "\t" + p.getTypeLeave());
         }
+
 
         for (int i = 0; i < gateSize; i++) {
             System.out.println("Gate:" + i + "\t" + gates[i].getPlaneCount() + "\t" + (double) gates[i].getTimeCount() / (double) (24L * 3600L * 1000L));
@@ -96,6 +89,45 @@ public class GreedyModel extends Model {
                 setPlaneInGate(pl.get(0), gas.get(0));
             }
         }
+    }
+
+    public DoubleLong checkUser2() {
+        long l = 0;
+        double s = 0;
+        for (User u : users) {
+            if (!isInDate20(planes[u.getFrom()]) || !isInDate20(planes[u.getTo()])) {
+                continue;
+            }
+            u.init();
+            if (planes[u.getFrom()].getGate() == null || planes[u.getTo()].getGate() == null) {
+                continue;
+            }
+
+            long maxt = planes[u.getTo()].getTimeLeave() - planes[u.getFrom()].getTimeArrive() - MINUTE45;
+            long t = timeFlow(
+                    getSGate(planes[u.getFrom()].getGate()).isTs(),
+                    getSGate(planes[u.getTo()].getGate()).isTs(),
+                    planes[u.getFrom()].getTypeArrive(),
+                    planes[u.getTo()].getTypeLeave()
+            );
+            u.setTimepp(t <= maxt ? t : 360 * MINUTE);
+
+            t += timeMetro(
+                    getSGate(planes[u.getFrom()].getGate()).isTs(),
+                    getSGate(planes[u.getTo()].getGate()).isTs(),
+                    planes[u.getFrom()].getTypeArrive(),
+                    planes[u.getTo()].getTypeLeave()
+            );
+            t += timeWalk
+                    [getSGate(planes[u.getFrom()].getGate()).getTypeArrive()]
+                    [getSGate(planes[u.getTo()].getGate()).getTypeLeave()];
+            u.setTimejz((double) (t <= maxt ? t : 360 * MINUTE) / (double) maxt);
+
+//            System.out.println("User:" + u.getId() + "\tFrom:" + u.getFrom() + "\tTo:" + u.getTo() + "\tAmount:" + u.getAmount() + "\t" + u.getTimepp() / MINUTE + "\t" + u.getTimejz());
+            l += u.getTimepp() / MINUTE / 5 * u.getAmount();
+            s += u.getTimejz() * u.getAmount();
+        }
+        return new DoubleLong(s, l);
     }
 
     private static int getGateType(Gate gate) {
@@ -154,6 +186,65 @@ public class GreedyModel extends Model {
         super.init();
         for (List<Plane> pl : planeList) {
             pl.clear();
+        }
+    }
+
+    private Gate getSGate(Gate raw) {
+        return gates[sgi[raw.getId()]];
+    }
+
+    public int[] getSgi() {
+        return sgi;
+    }
+
+    public void setSgi(int[] sgi) {
+        this.sgi = sgi;
+    }
+
+    private int swk;
+    private int sw1;
+    private int sw2;
+    private List<Gate> gateListL = new ArrayList<>();
+
+    public void beforeSwitch() {
+        swk = 0;
+        sw1 = 0;
+        sw2 = 0;
+    }
+
+    public boolean switchGate() {
+        int k = swk;
+        swk++;
+        for (Set<Gate> g : gateList) {
+            if (g.size() >= 2) {
+                int s2 = g.size() * (g.size() - 1) / 2;
+                if (k < s2) {
+                    if (k == 0) {
+                        sw1 = 0;
+                        sw2 = 0;
+                        gateListL.clear();
+                        gateListL.addAll(g);
+                    }
+                    sw2++;
+                    if (sw2 >= g.size()) {
+                        sw1++;
+                        sw2 = sw1 + 1;
+                    }
+                    int c = sgi[gateListL.get(sw1).getId()];
+                    sgi[gateListL.get(sw1).getId()] = sgi[gateListL.get(sw2).getId()];
+                    sgi[gateListL.get(sw2).getId()] = c;
+                    return true;
+                } else {
+                    k -= s2;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void resetSwitch() {
+        for (int i = 0; i < sgi.length; i++) {
+            sgi[i] = i;
         }
     }
 }

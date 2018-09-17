@@ -12,6 +12,7 @@ public class Plane {
     private long timeActive;
     private boolean nw;
 
+    private Gate gate = null;
     private final Set<User> userUp = new HashSet<>();
     private final Set<User> userDn = new HashSet<>();
 
@@ -87,6 +88,7 @@ public class Plane {
 
     public void init() {
         this.timeActive = -1;
+        this.gate = null;
     }
 
     public Set<User> getUserUp() {
@@ -95,5 +97,13 @@ public class Plane {
 
     public Set<User> getUserDn() {
         return userDn;
+    }
+
+    public Gate getGate() {
+        return gate;
+    }
+
+    public void setGate(Gate gate) {
+        this.gate = gate;
     }
 }

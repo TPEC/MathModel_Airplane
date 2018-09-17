@@ -12,32 +12,33 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
+import static core.Gate.TYPE_D;
+
 public abstract class Model {
     public static final long MINUTE45 = 45L * 60L * 1000L;
+    public static final long MINUTE = 60L * 1000L;
 
     static final int gateSize;
     static final Gate[] gates;
-    static final int[][] timeFlow;
-    static final int[][] timeMetro;
-    static final int[][] timeWalk;
+    static final long[][] timeWalk;
 
     static final int planeSize;
     static final Plane[] planes;
 
     static final int userSize;
-    static final User[] users;
+    static final List<User> users;
 
     final List<Plane> waiting = new ArrayList<>();
 
     static {
+        String folder = "./";
+
         gateSize = 69;
         gates = new Gate[gateSize];
-        timeFlow = new int[gateSize][gateSize];
-        timeMetro = new int[gateSize][gateSize];
-        timeWalk = new int[gateSize][gateSize];
+        timeWalk = new long[gateSize][gateSize];
 
         try {
-            BufferedReader br = new BufferedReader(new FileReader("D:\\Develop\\Java\\Airplane\\Gates.csv"));
+            BufferedReader br = new BufferedReader(new FileReader(folder + "Gates.csv"));
             br.readLine();
             for (int i = 0; i < gateSize; i++) {
                 String[] l = br.readLine().split(",");
@@ -52,10 +53,29 @@ public abstract class Model {
         }
 
 
+        long t[][] = new long[][]{
+                {10, 15, 20, 25, 20, 25, 25},
+                {15, 10, 15, 20, 15, 20, 20},
+                {20, 15, 10, 25, 20, 25, 25},
+                {25, 20, 25, 10, 15, 20, 20},
+                {20, 15, 20, 15, 10, 15, 15},
+                {25, 20, 25, 20, 15, 10, 20},
+                {25, 20, 25, 20, 15, 20, 10}
+        };
+
+        for (int i = 0; i < gateSize; i++) {
+            Gate gi = gates[i];
+            for (int j = 0; j < gateSize; j++) {
+                Gate gj = gates[j];
+                timeWalk[i][j] = t[(gi.isTs() ? 0 : 1) * 3 + gi.getArea()][(gj.isTs() ? 0 : 1) * 3 + gj.getArea()] * MINUTE;
+            }
+        }
+
+
         planeSize = 753;
         planes = new Plane[planeSize];
         try {
-            BufferedReader br = new BufferedReader(new FileReader("D:\\Develop\\Java\\Airplane\\Pucks.csv"));
+            BufferedReader br = new BufferedReader(new FileReader(folder + "Pucks.csv"));
             br.readLine();
             for (int i = 0; i < planeSize; i++) {
                 String[] l = br.readLine().split(",");
@@ -72,19 +92,32 @@ public abstract class Model {
         }
 
         userSize = 4315;
-        users = new User[userSize];
+        users = new ArrayList<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader("D:\\Develop\\Java\\Airplane\\DataS.csv"));
+            BufferedReader br = new BufferedReader(new FileReader(folder + "DataS.csv"));
+            br.readLine();
             for (int i = 0; i < userSize; i++) {
                 String[] l = br.readLine().split(",");
                 if (l[0].charAt(0) == '\uFEFF') {
                     l[0] = l[0].substring(1);
                 }
-                users[i] = new User(i, Integer.valueOf(l[0]), Integer.valueOf(l[1]));
-
-                if (isInDate20(planes[users[i].getFrom()]) && isInDate20(planes[users[i].getTo()])) {
-                    planes[users[i].getFrom()].getUserDn().add(users[i]);
-                    planes[users[i].getTo()].getUserUp().add(users[i]);
+                int from = Integer.valueOf(l[1]);
+                int to = Integer.valueOf(l[2]);
+                boolean userflag = false;
+                for (User user : users) {
+                    if (user.getFrom() == from && user.getTo() == to) {
+                        user.setAmount(user.getAmount() + Integer.valueOf(l[0]));
+                        userflag = true;
+                        break;
+                    }
+                }
+                if (!userflag) {
+                    User user = new User(users.size(), from, to, Integer.valueOf(l[0]));
+                    users.add(user);
+                    if (isInDate20(planes[user.getFrom()]) && isInDate20(planes[user.getTo()])) {
+                        planes[user.getFrom()].getUserDn().add(user);
+                        planes[user.getTo()].getUserUp().add(user);
+                    }
                 }
             }
             br.close();
@@ -125,37 +158,80 @@ public abstract class Model {
 
     abstract double score(Gate gate, Plane plane);
 
-    List<Plane> getPlanesAfterPlane_U(Plane plane, Gate gate) {
-        List<Plane> l = new ArrayList<>();
-        for (int i = plane.getId() + 1; i < planeSize; i++) {
-            if (planes[i].getTimeArrive() < plane.getTypeLeave() && checkPlaneGate(plane, gate)) {
-                l.add(planes[i]);
-            }
+    static long timeFlow(boolean ft, boolean tt, int fdi, int tdi) {
+        boolean fd = fdi == TYPE_D;
+        boolean td = tdi == TYPE_D;
+        if (td && tt && fd && ft) {
+            return 15 * MINUTE;
+        } else if (td && tt && fd) {
+            return 20 * MINUTE;
+        } else if (td && tt && ft) {
+            return 35 * MINUTE;
+        } else if (td && tt) {
+            return 40 * MINUTE;
+        } else if (td && fd && ft) {
+            return 20 * MINUTE;
+        } else if (td && fd) {
+            return 15 * MINUTE;
+        } else if (td && ft) {
+            return 40 * MINUTE;
+        } else if (td) {
+            return 35 * MINUTE;
+        } else if (tt && fd && ft) {
+            return 35 * MINUTE;
+        } else if (tt && fd) {
+            return 40 * MINUTE;
+        } else if (tt && ft) {
+            return 20 * MINUTE;
+        } else if (tt) {
+            return 30 * MINUTE;
+        } else if (fd && ft) {
+            return 40 * MINUTE;
+        } else if (fd) {
+            return 45 * MINUTE;
+        } else if (ft) {
+            return 30 * MINUTE;
+        } else {
+            return 20 * MINUTE;
         }
-        return l;
     }
 
-    List<Plane> getPlanesAfterPlane_C(Plane plane, Gate gate) {
-        List<Plane> l = new ArrayList<>();
-        for (int i = plane.getId() + 1; i < planeSize; i++) {
-            if (planes[i].getTimeArrive() >= plane.getTimeLeave()) {
-                break;
-            }
-            if (planes[i].getTimeLeave() + 45L * 60L * 1000L <= plane.getTimeLeave() && checkPlaneGate(planes[i], gate)) {
-                l.add(planes[i]);
-            }
+    static long timeMetro(boolean ft, boolean tt, int fdi, int tdi) {
+        boolean fd = fdi == TYPE_D;
+        boolean td = tdi == TYPE_D;
+        if (td && tt && fd && ft) {
+            return 0;
+        } else if (td && tt && fd) {
+            return 8 * MINUTE;
+        } else if (td && tt && ft) {
+            return 0;
+        } else if (td && tt) {
+            return 8 * MINUTE;
+        } else if (td && fd && ft) {
+            return 8 * MINUTE;
+        } else if (td && fd) {
+            return 0;
+        } else if (td && ft) {
+            return 8 * MINUTE;
+        } else if (td) {
+            return 0;
+        } else if (tt && fd && ft) {
+            return 0;
+        } else if (tt && fd) {
+            return 8 * MINUTE;
+        } else if (tt && ft) {
+            return 0;
+        } else if (tt) {
+            return 8 * MINUTE;
+        } else if (fd && ft) {
+            return 8 * MINUTE;
+        } else if (fd) {
+            return 16 * MINUTE;
+        } else if (ft) {
+            return 8 * MINUTE;
+        } else {
+            return 0;
         }
-        return l;
-    }
-
-    List<Plane> getPlanesAfterPlane_N(Plane plane, Gate gate) {
-        List<Plane> l = new ArrayList<>();
-        for (int i = plane.getId() + 1; i < planeSize; i++) {
-            if (planes[i].getTimeArrive() >= plane.getTypeLeave() && checkPlaneGate(plane, gate)) {
-                l.add(planes[i]);
-            }
-        }
-        return l;
     }
 
     static boolean checkPlaneGate(Plane plane, Gate gate) {
@@ -166,15 +242,12 @@ public abstract class Model {
 
     void setPlaneInGate(Plane plane, Gate gate) {
         gate.setPlane(plane);
+        plane.setGate(gate);
 //        System.out.println(plane.getId() + "\t" + gate.getId()
 //                    + "\t" + formatDate(plane.getTimeArrive())
 //                    + "\t" + formatDate(plane.getTimeLeave()));
         System.out.println(plane.getId() + "," + gate.getId()
                 + "," + (plane.getTimeArrive() - 1516377600000L) / 60000L
                 + "," + (plane.getTimeLeave() - 1516377600000L) / 60000L);
-    }
-
-    static int getTimeTotal(int from, int to) {
-        return timeFlow[from][to] + timeMetro[from][to] + timeWalk[from][to];
     }
 }

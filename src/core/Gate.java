@@ -10,8 +10,8 @@ public class Gate {
     public static final int TYPE_I = 1;
     public static final int TYPE_D = 2;
 
-    public static final int AREA_CENTER = 0;
-    public static final int AREA_NORTH = 1;
+    public static final int AREA_CENTER = 1;
+    public static final int AREA_NORTH = 0;
     public static final int AREA_SOUTH = 2;
     public static final int AREA_EAST = 3;
 
