@@ -247,4 +247,70 @@ public class GreedyModel extends Model {
             sgi[i] = i;
         }
     }
+
+    private List<Gate> getPlaneSwitch1_0(Plane plane) {
+        List<Gate> r = new ArrayList<>();
+        for (Gate g : gates) {
+            if (g.canSetIn(plane)) {
+                r.add(g);
+            }
+        }
+        return r;
+    }
+
+    private DoubleLong best = new DoubleLong();
+
+    private Gate getBestGate(Plane plane, int problem) {
+        List<Gate> gs = getPlaneSwitch1_0(plane);
+        if (gs.isEmpty()) {
+            return null;
+        }
+        best = checkUser2();
+        Gate bestGate = null;
+        Gate gOrigin = plane.getGate();
+        gOrigin.removePlane(plane);
+        for (Gate g : gs) {
+            g.setPlane(plane);
+            DoubleLong dl = checkUser2();
+            g.removePlane(plane);
+            if (problem == 2) {
+                if (dl.l < best.l) {
+                    best = dl;
+                    bestGate = g;
+                }
+            } else {
+                if (dl.d < best.d) {
+                    best = dl;
+                    bestGate = g;
+                }
+            }
+        }
+        gOrigin.setPlane(plane);
+        return bestGate;
+    }
+
+    public boolean switchPlane_10(int problem) {
+        boolean flag = false;
+        for (int i = 0; i < planeSize; i++) {
+            Plane p = planes[i];
+            if (!isInDate20(p)) {
+                continue;
+            }
+            if (p.getGate() == null) {
+                continue;
+            }
+            if (p.getUserUp().size() == 0 && p.getUserDn().size() == 0) {
+                continue;
+            }
+            Gate g = getBestGate(p, problem);
+            if (g != null) {
+                p.getGate().removePlane(p);
+                g.setPlane(p);
+                System.out.println("SWITCH plane" + p.getId() + " to gate" + sgi[g.getId()] + "\t" + best.d);
+                i = 0;
+                flag = true;
+            }
+        }
+        return flag;
+    }
 }

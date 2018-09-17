@@ -30,6 +30,9 @@ public abstract class Model {
 
     final List<Plane> waiting = new ArrayList<>();
 
+    /**
+     * load data from csv files
+     */
     static {
         String folder = "./";
 
@@ -133,6 +136,10 @@ public abstract class Model {
         }
     }
 
+    /**
+     * @param plane
+     * @return tell if the plane arrived at 20 or leave at 20
+     */
     static boolean isInDate20(Plane plane) {
         return new Date(plane.getTimeArrive()).getDate() == 20 || new Date(plane.getTimeLeave()).getDate() == 20;
     }
@@ -243,9 +250,6 @@ public abstract class Model {
     void setPlaneInGate(Plane plane, Gate gate) {
         gate.setPlane(plane);
         plane.setGate(gate);
-//        System.out.println(plane.getId() + "\t" + gate.getId()
-//                    + "\t" + formatDate(plane.getTimeArrive())
-//                    + "\t" + formatDate(plane.getTimeLeave()));
         System.out.println(plane.getId() + "," + gate.getId()
                 + "," + (plane.getTimeArrive() - 1516377600000L) / 60000L
                 + "," + (plane.getTimeLeave() - 1516377600000L) / 60000L);

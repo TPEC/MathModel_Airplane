@@ -108,6 +108,16 @@ public class Gate {
         return planes.isEmpty() ? null : planes.get(planes.size() - 1);
     }
 
+    public boolean canSetIn(Plane plane) {
+        for (Plane p : planes) {
+            if ((plane.getTimeArrive() >= p.getTimeArrive() && plane.getTimeArrive() < p.getTimeLeave())
+                    || (plane.getTimeLeave() > p.getTimeArrive() && plane.getTimeLeave() <= p.getTimeLeave())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public Plane getPlaneIn(Plane plane) {
         return getPlaneIn(plane.getTimeLeave() - MINUTE45, plane.getTimeLeave());
     }
@@ -128,9 +138,19 @@ public class Gate {
     public void setPlane(Plane plane) {
         planes.add(plane);
         planes.sort(Comparator.comparingLong(Plane::getTimeLeave));
+        plane.setGate(this);
         long beg = Math.max(plane.getTimeArrive(), 1516377600000L);
         long end = Math.min(plane.getTimeLeave(), 1516464000000L);
         timeCount += end - beg;
+    }
+
+    public void removePlane(Plane plane) {
+        if (planes.remove(plane)) {
+            plane.setGate(null);
+            long beg = Math.max(plane.getTimeArrive(), 1516377600000L);
+            long end = Math.min(plane.getTimeLeave(), 1516464000000L);
+            timeCount -= end - beg;
+        }
     }
 
     public int getPlaneCount() {
