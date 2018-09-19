@@ -38,14 +38,9 @@ public class GreedyModel extends Model {
 
 
         System.out.println("SIZE:" + waiting.size());
-        for (Plane p : waiting) {
-            System.out.println(p.getId() + "\t" + p.isNw() + "\t" + p.getTypeArrive() + "\t" + p.getTypeLeave());
-        }
-
-
-        for (int i = 0; i < gateSize; i++) {
-            System.out.println("Gate:" + i + "\t" + gates[i].getPlaneCount() + "\t" + (double) gates[i].getTimeCount() / (double) (24L * 3600L * 1000L));
-        }
+//        for (Plane p : waiting) {
+//            System.out.println(p.getId() + "\t" + p.isNw() + "\t" + p.getTypeArrive() + "\t" + p.getTypeLeave());
+//        }
     }
 
     private void doOnce(List<Plane> pl) {
@@ -198,7 +193,7 @@ public class GreedyModel extends Model {
     }
 
     public void setSgi(int[] sgi) {
-        this.sgi = sgi;
+        this.sgi = Arrays.copyOf(sgi, sgi.length);
     }
 
     private int swk;
@@ -251,7 +246,8 @@ public class GreedyModel extends Model {
     private List<Gate> getPlaneSwitch1_0(Plane plane) {
         List<Gate> r = new ArrayList<>();
         for (Gate g : gates) {
-            if (g.canSetIn(plane)) {
+            if (g.isNw() == plane.isNw() && (g.getTypeArrive() & plane.getTypeArrive()) > 0 && (g.getTypeLeave() & plane.getTypeLeave()) > 0
+                    && g.canSetIn(plane)) {
                 r.add(g);
             }
         }
@@ -306,11 +302,63 @@ public class GreedyModel extends Model {
             if (g != null) {
                 p.getGate().removePlane(p);
                 g.setPlane(p);
-                System.out.println("SWITCH plane" + p.getId() + " to gate" + sgi[g.getId()] + "\t" + best.d);
+                if (problem == 2) {
+                    System.out.println("SWITCH plane" + p.getId() + " to gate" + sgi[g.getId()] + "\t" + best.l);
+                } else {
+                    System.out.println("SWITCH plane" + p.getId() + " to gate" + sgi[g.getId()] + "\t" + best.d);
+                }
                 i = 0;
                 flag = true;
             }
         }
         return flag;
+    }
+
+    public void toRealSwitch() {
+        List<Plane>[] planesBkp = new ArrayList[gateSize];
+        for (int i = 0; i < gateSize; i++) {
+            planesBkp[i] = new ArrayList<>(gates[i].getPlanes());
+        }
+        for (int i = 0; i < gateSize; i++) {
+            if (sgi[i] != i) {
+                gates[i].clearPlanes();
+                for (Plane p : planesBkp[sgi[i]]) {
+                    gates[i].setPlane(p);
+                }
+            }
+        }
+        resetSwitch();
+    }
+
+    public void printPlanes() {
+        System.out.println("Plane,Gate,Nw");
+        for (Plane p : planes) {
+            if (isInDate20(p)) {
+                System.out.printf("%d,%s,%b\n", p.getId(), p.getGate() == null ? -1 : p.getGate().getName(), p.isNw());
+            }
+        }
+
+        System.out.println("Gate,Pct");
+        for (Gate g : gates) {
+            g.reCalcTimeCount();
+            System.out.printf("%s,%f\n", g.getName(), (double) g.getTimeCount() / (double) (24L * 60L * MINUTE));
+        }
+
+        System.out.println("=======ZW=======");
+        System.out.println("PlaneID,GateID,TimeArrive(min),TimeLeave(min)");
+        for (Plane p : planes) {
+            if (isInDate20(p) && p.getGate() != null) {
+                System.out.println(p.getId() + "," + p.getGate().getId()
+                        + "," + (p.getTimeArrive() - 1516377600000L) / 60000L
+                        + "," + (p.getTimeLeave() - 1516377600000L) / 60000L);
+            }
+        }
+
+        System.out.println("FromPlane,ToPlane,UserAmount,Time,TimePct");
+        for (User u : users) {
+            if (isInDate20(planes[u.getFrom()]) && isInDate20(planes[u.getTo()])) {
+                System.out.println(u.getFrom() + "," + u.getTo() + "," + u.getAmount() + "," + u.getTimepp() / MINUTE + "," + u.getTimejz());
+            }
+        }
     }
 }

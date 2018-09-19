@@ -48,7 +48,10 @@ public abstract class Model {
                 gates[i] = new Gate(Integer.valueOf(l[3]),
                         Integer.valueOf(l[4]),
                         l[5].equals("1"),
-                        l[1].equals("T"), i, l[2]);
+                        l[1].equals("T"),
+                        i,
+                        l[2],
+                        l[0]);
             }
             br.close();
         } catch (IOException e) {
@@ -141,7 +144,7 @@ public abstract class Model {
      * @return tell if the plane arrived at 20 or leave at 20
      */
     static boolean isInDate20(Plane plane) {
-        return new Date(plane.getTimeArrive()).getDate() == 20 || new Date(plane.getTimeLeave()).getDate() == 20;
+        return new Date(plane.getTimeArrive()).getDate() == 20 || new Date(plane.getTimeLeave() - MINUTE45).getDate() == 20;
     }
 
     void init() {
@@ -250,8 +253,8 @@ public abstract class Model {
     void setPlaneInGate(Plane plane, Gate gate) {
         gate.setPlane(plane);
         plane.setGate(gate);
-        System.out.println(plane.getId() + "," + gate.getId()
-                + "," + (plane.getTimeArrive() - 1516377600000L) / 60000L
-                + "," + (plane.getTimeLeave() - 1516377600000L) / 60000L);
+//        System.out.println(plane.getId() + "," + gate.getId()
+//                + "," + (plane.getTimeArrive() - 1516377600000L) / 60000L
+//                + "," + (plane.getTimeLeave() - 1516377600000L) / 60000L);
     }
 }

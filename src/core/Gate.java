@@ -21,12 +21,13 @@ public class Gate {
     private boolean ts;
     private int id;
     private int area;
+    private String name;
 
     private final List<Plane> planes = new ArrayList<>();
     private double score = 0;
     private long timeCount = 0;
 
-    public Gate(int typeArrive, int typeLeave, boolean nw, boolean ts, int id, String area) {
+    public Gate(int typeArrive, int typeLeave, boolean nw, boolean ts, int id, String area, String name) {
         this.typeArrive = typeArrive;
         this.typeLeave = typeLeave;
         this.nw = nw;
@@ -46,6 +47,7 @@ public class Gate {
                 this.area = AREA_EAST;
                 break;
         }
+        this.name = name;
     }
 
     public int getTypeArrive() {
@@ -111,7 +113,8 @@ public class Gate {
     public boolean canSetIn(Plane plane) {
         for (Plane p : planes) {
             if ((plane.getTimeArrive() >= p.getTimeArrive() && plane.getTimeArrive() < p.getTimeLeave())
-                    || (plane.getTimeLeave() > p.getTimeArrive() && plane.getTimeLeave() <= p.getTimeLeave())) {
+                    || (plane.getTimeLeave() > p.getTimeArrive() && plane.getTimeLeave() <= p.getTimeLeave())
+                    || (plane.getTimeArrive() <= p.getTimeArrive() && plane.getTimeLeave() >= p.getTimeLeave())) {
                 return false;
             }
         }
@@ -161,9 +164,31 @@ public class Gate {
         return timeCount;
     }
 
+    public void reCalcTimeCount() {
+        timeCount = 0;
+        for (Plane p : planes) {
+            long beg = Math.max(p.getTimeArrive(), 1516377600000L);
+            long end = Math.min(p.getTimeLeave(), 1516464000000L);
+            timeCount += end - beg;
+        }
+    }
+
     public void init() {
         this.planes.clear();
         this.score = 0;
         this.timeCount = 0;
+    }
+
+    public List<Plane> getPlanes() {
+        return planes;
+    }
+
+    public void clearPlanes() {
+        planes.clear();
+        this.timeCount = 0;
+    }
+
+    public String getName() {
+        return name;
     }
 }

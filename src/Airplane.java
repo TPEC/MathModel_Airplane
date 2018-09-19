@@ -11,7 +11,9 @@ public class Airplane {
         int problem = Integer.valueOf(args[0]);
         int count = Integer.valueOf(args[1]);
 
-        if (problem == 2) {
+        if (problem == 1) {
+            Q1();
+        } else if (problem == 2) {
             Q2_new(model, count);
         } else if (problem == 3) {
             Q3_new(model, count);
@@ -38,8 +40,9 @@ public class Airplane {
     }
 
     public static void Q1() {
-        Model model = new GreedyModel();
+        GreedyModel model = new GreedyModel();
         model.run();
+        model.printPlanes();
     }
 
     public static ScoreAndSgi Q2(GreedyModel model, boolean rnd) {
@@ -79,23 +82,22 @@ public class Airplane {
     }
 
     public static ScoreAndSgi Q3(GreedyModel model, boolean rnd) {
-        ScoreAndSgi p = new ScoreAndSgi();
+        model.resetSwitch();
+        ScoreAndSgi best = new ScoreAndSgi(model.checkUser2().d, model.getSgi());
         long time = System.currentTimeMillis();
         for (int i = 0; i < 100; i++) {
             List<ScoreAndSgi> r = new ArrayList<>();
             model.beforeSwitch();
             int[] sgi = model.getSgi();
-            double score = model.checkUser2().d;
-            p.d = score;
-            p.sgi = sgi;
             while (model.switchGate()) {
-                int[] sgit = model.getSgi();
+                int[] sgit = Arrays.copyOf(model.getSgi(), model.getSgi().length);
                 double st = model.checkUser2().d;
-                if (st < score) {
+                if (st < best.d) {
                     r.add(new ScoreAndSgi(st, Arrays.copyOf(sgit, sgit.length)));
                 }
                 model.setSgi(sgi);
             }
+            int before = 0;
             r.sort(Comparator.comparingDouble(o -> o.d));
             System.out.println("SIZE:" + r.size());
             if (!r.isEmpty()) {
@@ -103,15 +105,21 @@ public class Airplane {
                 if (rnd) {
                     index = (int) (new Random().nextDouble() * r.size());
                 }
+                best.d = r.get(index).d;
+                best.sgi = Arrays.copyOf(r.get(index).sgi, r.get(index).sgi.length);
                 model.setSgi(r.get(index).sgi);
-                System.out.println("Before:" + score + "\tAfter:" + r.get(index).d);
+                System.out.println("Before:" + best.d + "\tAfter:" + r.get(index).d);
             } else {
+                if (best.sgi != null) {
+                    model.setSgi(best.sgi);
+                }
                 break;
             }
         }
         time = System.currentTimeMillis() - time;
         System.out.println("TIME:" + (double) time / 1000.0);
-        return p;
+        model.toRealSwitch();
+        return best;
     }
 
     public static class ScoreAndSgi {
@@ -137,21 +145,20 @@ public class Airplane {
     public static void Q2_new(GreedyModel model, int count) {
         model.resetSwitch();
         for (int i = 0; i < count; i++) {
-            if (!model.switchPlane_10(2)) {
-
-            }
-            ScoreAndSgi sas = Q2(model, false);
+            System.out.println("=========EPOCH" + i);
+            Q2(model, false);
+            model.switchPlane_10(2);
         }
+        model.printPlanes();
     }
 
     public static void Q3_new(GreedyModel model, int count) {
         model.resetSwitch();
-        Q3(model, false);
         for (int i = 0; i < count; i++) {
             System.out.println("=========EPOCH" + i);
-            if (model.switchPlane_10(3)) {
-
-            }
+            Q3(model, false);
+            model.switchPlane_10(3);
         }
+        model.printPlanes();
     }
 }
